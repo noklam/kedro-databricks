@@ -39,3 +39,28 @@ jobs:
         uses: codecov/codecov-action@v4.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+  check-version:
+    name: Check if version changed
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check if version changed
+        run: |
+          T=$(echo $(git diff ${{github.sha}}) | grep "pyproject.toml" | grep "+version")
+
+          if [ -n "$T" ]; then
+              echo "changed=True" >> $GITHUB_OUTPUT
+          else
+              echo "changed=False" >> $GITHUB_OUTPUT
+          fi
+  another_job:
+    name: Another job
+    runs-on: ubuntu-latest
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'True'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Another job
+        run: echo "Another job"
